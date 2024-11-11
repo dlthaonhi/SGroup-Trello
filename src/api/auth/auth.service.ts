@@ -7,7 +7,7 @@ import {
   ResponseStatus,
 } from "../../services/serviceResponse";
 import { StatusCodes } from "http-status-codes";
-import { generateJwt } from "../../services/jwtService";
+import { generateJwt, verifyJwt } from "../../services/jwtService";
 import { Login, Token } from "../auth/auth.interface";
 import { calculateUnixTime } from "../../services/caculateDatetime";
 import mailService from "../../services/sendEmail";
@@ -97,10 +97,24 @@ export const authService = {
       const token: Token = {
         accessToken: generateJwt({ userId: user.id }),
         refreshToken: generateJwt({ userId: user.id }),
-        expiresIn: calculateUnixTime(process.env.JWT_EXPIRES_IN || "1h"),
+        accessTokenExpiresIn: calculateUnixTime(process.env.JWT_EXPIRES_IN || "1h"),
+        refreshTokenExpiresIn: calculateUnixTime(process.env.JWT_EXPIRES_IN || "1000h"),
         tokenType: "Bearer",
       };
 
+      const updatedToken = await userRepository.updateUserByEmailAsync(user.email, {
+        refreshToken: token.refreshToken,
+        refreshTokenExpiresAt: new Date(token.refreshTokenExpiresIn *1000)
+       });
+
+      if (!updatedToken) {
+        return new ServiceResponse(
+          ResponseStatus.Failed,
+          "Error updating refresh token",
+          null,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
+      }
       return new ServiceResponse<Token>(
         ResponseStatus.Success,
         "Login successful",
@@ -146,6 +160,7 @@ export const authService = {
       );
     }
   },
+
   updateRoleUser: async (
     userId: string,
     roleName: string
@@ -180,6 +195,7 @@ export const authService = {
       );
     }
   },
+
   verifyEmail: async (email: string): Promise<boolean> => {
     try {
       // const user = await userRepository.findByEmailAsync(email);
@@ -194,10 +210,10 @@ export const authService = {
 
       const verifyEmailToken = generateJwt({ email });
 
-      const verifyUrl = `http://localhost:3000/activate?token=${verifyEmailToken}`;
+      const verifyUrl = `http://localhost:3000/auth/activate?token=${verifyEmailToken}`;
 
       const mailIsSent = await mailService.sendEmail({
-          emailFrom: "TrelloSGroupProject@gmail.com",
+          emailFrom: "thaonhi6102005ll@gmail.com",
           emailTo: email,
           emailSubject: "Verify email",
           emailText: `Click on the button below to verify your email: <a href="${verifyUrl}">Verify</a>`,
@@ -223,5 +239,48 @@ export const authService = {
       //   StatusCodes.INTERNAL_SERVER_ERROR
       // );
       return false;
-    }}
+  }},
+
+  verifyUser: async (token: string): Promise<ServiceResponse<Users | null>> => {
+    try {
+      // Giải mã token và kiểm tra tính hợp lệ
+      const decoded = verifyJwt(token);
+      
+      if (!decoded) {
+        return new ServiceResponse(
+          ResponseStatus.Failed,
+          "Invalid or expired token",
+          null,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+      const email:string = decoded.email;    
+
+      //Cập nhật isActivated trong database
+      const updatedUser = await userRepository.updateUserByEmailAsync(email, {isActivated: 1});
+      if (!updatedUser) {
+        return new ServiceResponse(
+          ResponseStatus.Failed,
+          "Error activating user",
+          null,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
+      }
+  
+      return new ServiceResponse(
+        ResponseStatus.Success,
+        "User activated successfully!",
+        null,
+        StatusCodes.OK
+      );
+    } catch (ex) {
+      return new ServiceResponse(
+        ResponseStatus.Failed,
+        `Error activating user: ${(ex as Error).message}`,
+        null,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+  },
+  
 };

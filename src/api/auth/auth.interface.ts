@@ -5,7 +5,8 @@ interface Login {
 interface Token {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
   tokenType: string;
 }
 
