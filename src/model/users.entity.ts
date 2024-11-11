@@ -33,7 +33,10 @@ export class Users extends DateTimeEntity {
   public bio: string;
 
   @Column({ type: "int", default: 0 })
-  public isActivated: Int32;
+  public isActive: Int32;
+
+  @Column({ type: "tinyint", default: 0 })
+  public isActivated: number;
 
   @Column({ type: "varchar", length: 255, nullable: true })
   public avatarUrl: string;
@@ -45,10 +48,10 @@ export class Users extends DateTimeEntity {
   public accessTokenExpiresAt: Date;
 
   @Column({ type: "varchar", length: 255, nullable: true })
-  public resetToken: string;
+  public refreshToken: string;
 
   @Column({ type: "datetime", nullable: true })
-  public resetTokenExpiresAt: Date;
+  public refreshTokenExpiresAt: Date;
 
   @OneToMany(() => projectMembers, (projectMembers) => projectMembers.userID, {
     cascade: true,
@@ -61,10 +64,10 @@ export class Users extends DateTimeEntity {
   @OneToMany(() => Notifications, (notifications) => notifications.userID)
   notifications: Notifications[];
 
-  @ManyToMany(() => Roles, (role) => role.users, {
-    cascade: true,
-  })
-  role: Roles[];
+  // @ManyToMany(() => Roles, (role) => role.users, {
+  //   cascade: true,
+  // })
+  // role: Roles[];
 
   @ManyToOne(() => BoardMembers, (boardMembers) => boardMembers.userID)
   boardMembers: BoardMembers;

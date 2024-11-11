@@ -5,9 +5,11 @@ const authRouter = Router();
 
 authRouter.post("/register", AuthController.register);
 authRouter.post("/login", AuthController.login);
-authRouter.get("/user/:id", canAccessBy(['read']), AuthController.getUser);
+authRouter.get("/user/:id", AuthController.getUser);
+// authRouter.get("/user/:id", canAccessBy(['read']), AuthController.getUser);
 authRouter.put("/userroles/:id", AuthController.updateRoleUser);
 
-// authRouter.post('/activate-email', AuthController.activateEmail);
+// authRouter.post('/send-activate', AuthController.activateEmail);
+authRouter.get('/activate', AuthController.activateEmail);
 
 export default authRouter;

@@ -5,6 +5,8 @@ import { Users } from "../../model/users.entity";
 import { ResponseStatus } from "../../services/serviceResponse";
 import { Login } from "./auth.interface";
 import { handleServiceResponse } from "../../services/httpHandlerResponse";
+import { verify } from "crypto";
+import { verifyJwt } from "@/services/jwtService";
 
 export const AuthController = {
   async register(req: Request, res: Response) {
@@ -82,20 +84,21 @@ export const AuthController = {
     }
   },
 
-  // async activateEmail(req: Request, res: Response) {
-  //   const email = req.body.email;
-  //   try {
-  //     const serviceResponse = await authService.activateEmail(email);
-  //     handleServiceResponse(serviceResponse, res);
-  //   } catch (error) {
-  //     const errorMessage = `Error activating email: ${
-  //       (error as Error).message
-  //     }`;
-  //     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-  //       status: ResponseStatus.Failed,
-  //       message: errorMessage,
-  //       data: null,
-  //     });
-  //   }
-  // },
+  async activateEmail(req: Request, res: Response) {
+    const token= req.query.token as string;
+    
+    try {
+      const serviceResponse = await authService.verifyUser(token);
+      handleServiceResponse(serviceResponse, res);
+    } catch (error) {
+      const errorMessage = `Error activating email: ${
+        (error as Error).message
+      }`;
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        status: ResponseStatus.Failed,
+        message: errorMessage,
+        data: null,
+      });
+    }
+  },
 };

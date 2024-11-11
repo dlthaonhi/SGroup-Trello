@@ -2,6 +2,7 @@ import { Users } from "../../model/users.entity";
 import { Roles } from "@/model/roles.entity";
 import { Permissions } from "@/model/permissions.entity";
 import dataSource from "../../config/typeorm.config";
+import { DeepPartial } from "typeorm";
 
 export const userRepository = dataSource.getRepository(Users).extend({
   async findAllAsync(): Promise<Users[]> {
@@ -14,13 +15,13 @@ export const userRepository = dataSource.getRepository(Users).extend({
 
   async createUserAsync(userData: Partial<Users>): Promise<Users> {
     const roleRepository = dataSource.getRepository(Roles);
-    const userRole = await roleRepository.findOneBy({ name: "user" });
-    if (!userRole) {
-      throw new Error("Roles 'user' not found");
-    }
+    // const userRole = await roleRepository.findOneBy({ name: "user" });
+    // if (!userRole) {
+    //   throw new Error("Roles 'user' not found");
+    // }
     const newUser = this.create({
       ...userData,
-      role: [userRole,]
+      // role: [userRole,]
     });
     return this.save(newUser);
   },
@@ -31,6 +32,23 @@ export const userRepository = dataSource.getRepository(Users).extend({
   ): Promise<Users | null> {
     await this.update(id, updateData);
     return this.findOneBy({ id });
+  },
+
+  async updateUserByEmailAsync(
+    email: string,
+    updateData: Partial<Users>
+  ): Promise<Users | null> {
+    const user = await this.findOne({
+      where: { email: email }
+    });
+    if (!user) {
+      throw new Error("Users not found");
+    }
+    const updatedUser = { ...user, ...updateData };
+    
+    await this.save(updatedUser);
+
+    return this.findOneBy({ email });
   },
 
   async updateUserRoleAsync(
@@ -44,12 +62,12 @@ export const userRepository = dataSource.getRepository(Users).extend({
     if (!user) {
       throw new Error("Users not found");
     }
-    const roleRepository = dataSource.getRepository(Roles);
-    const role = await roleRepository.findOneBy({ name: roleName });
-    if (!role) {
-      throw new Error(`Roles '${roleName}' not found`);
-    }
-    user.role = [role];
+    // const roleRepository = dataSource.getRepository(Roles);
+    // const role = await roleRepository.findOneBy({ name: roleName });
+    // if (!role) {
+    //   throw new Error(`Roles '${roleName}' not found`);
+    // }
+    // user.role = [role];
     return this.save(user);
   },
 
@@ -61,5 +79,10 @@ export const userRepository = dataSource.getRepository(Users).extend({
       where: { id: userId },
       relations: ["roles", "roles.permissions"],
     });
+  },
+
+  async createManyUsersAsync(userDatas: DeepPartial<Users>[]): Promise<Users[]> {
+    const newUsers = this.create(userDatas);
+    return this.save(newUsers);
   },
 });
